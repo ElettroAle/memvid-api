@@ -1,0 +1,49 @@
+# # Ambienti Virtuali
+# Ignora la cartella dell'ambiente virtuale, che contiene le librerie installate.
+# Questa è una delle regole più importanti!
+.venv/
+venv/
+ENV/
+
+# # File di configurazione di editor e IDE
+# Ignora le impostazioni personali del tuo editor di codice.
+.vscode/
+.idea/
+
+# # Artefatti di Python
+# Ignora le cartelle della cache di Python e i file compilati.
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# # File generati da Setuptools e Pip
+# Ignora i file e le cartelle create durante l'installazione e la creazione di pacchetti.
+*.egg-info/
+*.egg
+build/
+dist/
+pip-log.txt
+pip-delete-this-directory.txt
+local_settings.py
+
+# # File di sistema operativo
+# Ignora i file di cache specifici del sistema operativo.
+.DS_Store
+Thumbs.db
+
+# # Log e database
+# Ignora i file di log e i database SQLite che potresti usare per test locali.
+*.log
+*.sqlite3
+
+# # File di ambiente e segreti
+# CRUCIALE: Non caricare mai file che contengono password, chiavi API o altri segreti.
+.env
+*.env
+
+# # Report di testing e coverage
+# Ignora i file generati durante l'esecuzione dei test.
+.pytest_cache/
+.coverage
+htmlcov/
