@@ -1,83 +1,134 @@
-# API per Memvid
+# Memvid API
 
-Questo repository contiene il codice per un'API web costruita con [FastAPI](https://fastapi.tiangolo.com/) che funge da interfaccia per interagire con la libreria [Memvid](https://github.com/olow304/memvid). L'obiettivo è permettere il caricamento di documenti e l'interrogazione della memoria di Memvid tramite semplici chiamate HTTP.
+Questa è un'API web funzionale, costruita con [FastAPI](https://fastapi.tiangolo.com/), che funge da interfaccia per interagire con la libreria [Memvid](https://github.com/olow304/memvid). L'API permette di creare "memorie" da documenti o da chunk di testo e di interrogarle successivamente tramite un modello linguistico (LLM).
 
-**Stato del progetto:** Attualmente il progetto è un *boilerplate* funzionante, con gli endpoint dell'API definiti e pronti. La logica di business per l'integrazione con Memvid non è ancora stata implementata.
+## Funzionalità Principali
+
+* **Creazione di Memorie da File**: Carica uno o più file (`.txt`, `.pdf`) per creare una nuova memoria `memvid`.
+* **Creazione di Memorie da Testo**: Invia una lista di stringhe (chunk) per creare una nuova memoria.
+* **Interrogazione Intelligente**: Poni una domanda in linguaggio naturale a una memoria esistente per ricevere una risposta generata da un LLM, basata sul contesto estratto dai documenti.
+* **Gestione Organizzata**: Ogni memoria viene salvata in una cartella dedicata per una facile gestione.
+* **Test Suite**: Include una suite di unit test con `pytest` per verificare il corretto funzionamento degli endpoint.
 
 ## Struttura del Progetto
 
 ```
-.
-├── api/
-│   ├── main.py         # Entry point dell'applicazione FastAPI
-│   ├── models.py       # Modelli di dati Pydantic
-│   └── routes.py       # Definizione degli endpoint dell'API
-├── .venv/              # Ambiente virtuale di Python (ignorato da Git)
-└── requirements.txt    # Dipendenze della libreria Memvid
+memvid-api/
+├── .venv/                  # Ambiente virtuale Python (ignorato da Git)
+├── api/                    # Codice sorgente dell'API FastAPI
+│   ├── main.py
+│   ├── models.py
+│   └── routes.py
+├── memvid_memories/        # Directory dove vengono salvate le memorie create
+├── temp_uploads/           # Cartella per i file caricati temporaneamente
+├── tests/                  # Unit test per l'API
+│   └── test_api.py
+├── .gitignore
+├── README.md
+└── requirements.txt        # Lista delle dipendenze del progetto
 ```
 
-## Setup e Installazione
+## 1. Setup dell'Ambiente e Installazione
 
 Per eseguire questo progetto in locale, segui questi passaggi.
 
-**1. Clona il repository**
+**a. Clona il repository**
 ```bash
 git clone <URL_DEL_TUO_REPOSITORY>
-cd <NOME_DELLA_CARTELLA>
+cd memvid-api
 ```
 
-**2. Crea e attiva un ambiente virtuale**
+**b. Crea e attiva un ambiente virtuale**
+L'ambiente virtuale isola le dipendenze di questo progetto dal resto del sistema.
+
 ```bash
 # Crea l'ambiente
 python -m venv .venv
 
 # Attiva l'ambiente (Windows)
-.venv\Scripts\activate
+.\.venv\Scripts\activate
 
 # Attiva l'ambiente (macOS/Linux)
 source .venv/bin/activate
 ```
 
-**3. Installa le dipendenze**
-Questo progetto richiede sia le librerie di `memvid` che quelle per l'API web.
-
+**c. Installa tutte le dipendenze**
+Il file `requirements.txt` è configurato per installare tutto il necessario, inclusa la libreria `memvid` direttamente da GitHub.
 ```bash
-# Installa le dipendenze di memvid
 pip install -r requirements.txt
-
-# Installa le dipendenze dell'API (FastAPI, Uvicorn, etc.)
-pip install "fastapi[all]"
 ```
-> **Nota:** Per una gestione più pulita, potresti voler aggiungere `"fastapi[all]"` al tuo file `requirements.txt`.
 
-## Avviare l'Applicazione
+## 2. Configurazione di Visual Studio Code
 
-Con l'ambiente virtuale attivo, avvia il server di sviluppo con Uvicorn:
+La cartella `.vscode`, che contiene le impostazioni dell'editor, è volutamente inclusa nel file `.gitignore`. Questo perché le configurazioni possono essere specifiche per ogni utente. Di seguito sono riportati i passaggi per configurare VS Code da zero per questo progetto.
+
+**a. Seleziona l'Interprete Python**
+Dobbiamo dire a VS Code di usare l'interprete Python del nostro ambiente virtuale.
+
+1.  Apri la "Command Palette" (`Ctrl+Shift+P` o `Cmd+Shift+P` su Mac).
+2.  Digita e seleziona **"Python: Select Interpreter"**.
+3.  Scegli l'interprete che si trova nel percorso `.\.venv\Scripts\python.exe`. VS Code lo creerà o aggiornerà il file `.vscode/settings.json` per te.
+
+**b. Configura il Debugger (tasto F5)**
+Per poter avviare e debuggare l'applicazione premendo F5, è necessario creare un file di configurazione per il debugger.
+
+1.  Crea una cartella `.vscode` nella root del progetto (se non esiste già).
+2.  All'interno di `.vscode`, crea un file chiamato `launch.json`.
+3.  Incolla il seguente contenuto nel file `launch.json`:
+
+    ```json
+    {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Python: Debug FastAPI",
+                "type": "debugpy",
+                "request": "launch",
+                "module": "uvicorn",
+                "args": [
+                    "api.main:app",
+                    "--reload",
+                    "--port", 
+                    "8001"
+                ],
+                "jinja": true,
+                "justMyCode": true
+            }
+        ]
+    }
+    ```
+
+## 3. Configurazione delle Chiavi API (Variabili d'Ambiente)
+
+Per poter interrogare una memoria, l'API utilizza un modello linguistico che richiede una chiave API. Assicurati di impostare la variabile d'ambiente corretta nel tuo terminale prima di avviare il server.
+
+**Esempio (se usi Google Gemini):**
+```powershell
+# In PowerShell (Windows)
+$env:GOOGLE_API_KEY="LA_TUA_CHIAVE_API_QUI"
+
+# In Bash (macOS/Linux)
+export GOOGLE_API_KEY="LA_TUA_CHIAVE_API_QUI"
+```
+
+## 4. Avvio dell'Applicazione
+
+Con l'ambiente virtuale attivo e le variabili d'ambiente impostate, puoi avviare il server direttamente da VS Code premendo **F5**, oppure manualmente dal terminale:
 
 ```bash
-uvicorn api.main:app --reload
+uvicorn api.main:app --reload --port 8001
 ```
 
-Il server sarà in ascolto all'indirizzo `http://127.0.0.1:8000`. L'opzione `--reload` ricaricherà il server automaticamente ad ogni modifica del codice.
+## 5. Utilizzo dell'API
 
-## Endpoint dell'API
+### Documentazione Interattiva
+Il modo più semplice per testare l'API è tramite la documentazione interattiva (Swagger UI), disponibile all'indirizzo che hai configurato (es. **[http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs)**).
 
-Una volta avviato il server, puoi accedere alla documentazione interattiva (generata da Swagger UI) per testare gli endpoint.
+*(Gli esempi di `curl` rimangono invariati)*
 
-* **Documentazione Interattiva: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)**
+## 6. Eseguire i Test
 
-### Endpoint Disponibili
-
-* `GET /`: Endpoint di benvenuto.
-* `POST /api/upload-documents`: Endpoint per caricare uno o più file (logica da implementare).
-* `POST /api/add-chunks`: Endpoint per inviare una lista di "chunk" di testo (logica da implementare).
-* `POST /api/query`: Endpoint per inviare una query e ricevere una risposta (logica da implementare).
-
-## Come Eseguire il Debug
-
-Questo progetto è pre-configurato per il debug in Visual Studio Code.
-
-1.  Imposta un breakpoint nel codice (es. in `api/routes.py`).
-2.  Vai alla vista "Run and Debug" (`Ctrl+Shift+D`).
-3.  Seleziona **"Python: Debug FastAPI"** dal menu a tendina e premi F5.
-4.  Esegui una richiesta all'endpoint dove hai messo il breakpoint tramite la documentazione per attivare il debugger.
+Per assicurarti che tutto funzioni correttamente, puoi lanciare la suite di test automatizzati.
+```bash
+pytest
+```

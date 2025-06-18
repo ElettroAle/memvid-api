@@ -1,75 +1,139 @@
-from fastapi import APIRouter, UploadFile, File
-from typing import List
-from .models import AddChunksRequest, QueryRequest, ApiResponse
-
-import shutil
 import os
+import shutil
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Body
+from typing import List
+
+# Importiamo le classi principali di Memvid
+from memvid import MemvidEncoder, MemvidChat
+
+# Importiamo i nostri modelli Pydantic aggiornati
+from .models import CreateMemoryFromChunksRequest, QueryRequest, MemoryCreationResponse, QueryResponse
 
 router = APIRouter()
 
-UPLOAD_DIR = "uploads"
+# Definiamo delle directory di base per i file temporanei e le memorie permanenti
+UPLOAD_DIR = "temp_uploads"
+MEMORY_DIR = "memvid_memories"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(MEMORY_DIR, exist_ok=True)
 
-@router.post("/upload/")
-async def upload_file(file: UploadFile = File(...)):
-    file_location = os.path.join(UPLOAD_DIR, file.filename)
-    with open(file_location, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    return {"filename": file.filename}
-
-@router.post("/upload-multiple/")
-async def upload_multiple_files(files: List[UploadFile] = File(...)):
-    filenames = []
-    for file in files:
-        file_location = os.path.join(UPLOAD_DIR, file.filename)
-        with open(file_location, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        filenames.append(file.filename)
-    return {"filenames": filenames}
-
-@router.post("/upload-documents", response_model=ApiResponse, tags=["Memory"])
-async def upload_documents(
-    files: List[UploadFile] = File(..., description="Uno o più documenti da caricare.")
+@router.post("/create-from-files", response_model=MemoryCreationResponse, tags=["Memory Creation"])
+async def create_memory_from_files(
+    memory_name: str = Form(..., description="Nome univoco per la memoria da creare."),
+    files: List[UploadFile] = File(..., description="Uno o più documenti (PDF, TXT) da cui creare la memoria.")
 ):
     """
-    Endpoint per caricare uno o più documenti.
-    (Logica di processing non ancora implementata)
+    Crea una memoria Memvid da una lista di file caricati.
     """
-    filenames = [file.filename for file in files]
-    print(f"Ricevuti {len(filenames)} file: {filenames}")
-    
-    return ApiResponse(
-        message="Documenti ricevuti con successo.",
-        data={"files_uploaded": filenames}
-    )
+    # Creiamo una cartella specifica per questa memoria
+    memory_path = os.path.join(MEMORY_DIR, memory_name)
+    if os.path.exists(memory_path):
+        raise HTTPException(status_code=409, detail=f"Una memoria con il nome '{memory_name}' esiste già.")
+    os.makedirs(memory_path)
 
-@router.post("/add-chunks", response_model=ApiResponse, tags=["Memory"])
-async def add_chunks(request: AddChunksRequest):
-    """
-    Endpoint per aggiungere chunk di testo alla memoria.
-    (Logica di processing non ancora implementata)
-    """
-    num_chunks = len(request.chunks)
-    print(f"Ricevuti {num_chunks} chunk di testo.")
-    
-    return ApiResponse(
-        message=f"{num_chunks} chunk di testo ricevuti con successo.",
-        data={"chunk_count": num_chunks}
-    )
+    encoder = MemvidEncoder()
+    temp_file_paths = []
 
-@router.post("/query", response_model=ApiResponse, tags=["Query"])
+    try:
+        # Salviamo i file temporaneamente
+        for file in files:
+            temp_path = os.path.join(UPLOAD_DIR, file.filename)
+            with open(temp_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            temp_file_paths.append(temp_path)
+
+            # Aggiungiamo il contenuto all'encoder in base al tipo di file
+            if file.filename.lower().endswith(".pdf"):
+                encoder.add_pdf(temp_path)
+            elif file.filename.lower().endswith(".txt"):
+                with open(temp_path, "r", encoding="utf-8") as f:
+                    encoder.add_text(f.read())
+            else:
+                # Puoi aggiungere qui il supporto per altri tipi di file
+                print(f"File non supportato: {file.filename}, verrà ignorato.")
+
+        if not encoder.chunks:
+            raise HTTPException(status_code=400, detail="Nessun contenuto valido trovato nei file forniti.")
+
+        # Costruiamo la memoria video e l'indice
+        video_output_path = os.path.join(memory_path, "memory.mp4")
+        index_output_path = os.path.join(memory_path, "index.json")
+        stats = encoder.build_video(video_output_path, index_output_path)
+
+        return MemoryCreationResponse(
+            message="Memoria creata con successo dai file.",
+            memory_name=memory_name,
+            video_path=video_output_path,
+            index_path=index_output_path,
+            stats=stats
+        )
+
+    except Exception as e:
+        # In caso di errore, rimuoviamo la cartella della memoria creata parzialmente
+        if os.path.exists(memory_path):
+            shutil.rmtree(memory_path)
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Puliamo i file temporanei
+        for path in temp_file_paths:
+            os.remove(path)
+
+
+@router.post("/create-from-chunks", response_model=MemoryCreationResponse, tags=["Memory Creation"])
+async def create_memory_from_chunks(request: CreateMemoryFromChunksRequest):
+    """
+    Crea una memoria Memvid direttamente da una lista di chunk di testo.
+    """
+    memory_path = os.path.join(MEMORY_DIR, request.memory_name)
+    if os.path.exists(memory_path):
+        raise HTTPException(status_code=409, detail=f"Una memoria con il nome '{request.memory_name}' esiste già.")
+    os.makedirs(memory_path)
+    
+    try:
+        encoder = MemvidEncoder()
+        encoder.add_chunks(request.chunks)
+
+        video_output_path = os.path.join(memory_path, "memory.mp4")
+        index_output_path = os.path.join(memory_path, "index.json")
+        stats = encoder.build_video(video_output_path, index_output_path)
+
+        return MemoryCreationResponse(
+            message="Memoria creata con successo dai chunk.",
+            memory_name=request.memory_name,
+            video_path=video_output_path,
+            index_path=index_output_path,
+            stats=stats
+        )
+    except Exception as e:
+        if os.path.exists(memory_path):
+            shutil.rmtree(memory_path)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/query", response_model=QueryResponse, tags=["Query"])
 async def query_memory(request: QueryRequest):
     """
-    Endpoint per interrogare la memoria.
-    (Logica di interrogazione non ancora implementata)
+    Interroga una memoria esistente usando una query di testo.
     """
-    print(f"Ricevuta query: '{request.query}'")
-    
-    # Risposta simulata
-    return ApiResponse(
-        message="Query ricevuta.",
-        data={
-            "your_query": request.query,
-            "response": "Questa è una risposta simulata. La logica di ricerca non è ancora collegata."
-        }
-    )
+    memory_path = os.path.join(MEMORY_DIR, request.memory_name)
+    video_file = os.path.join(memory_path, "memory.mp4")
+    index_file = os.path.join(memory_path, "index.json")
+
+    if not os.path.exists(video_file) or not os.path.exists(index_file):
+        raise HTTPException(status_code=404, detail=f"Memoria '{request.memory_name}' non trovata.")
+
+    try:
+        # Assicurati che le chiavi API per il provider LLM siano impostate come variabili d'ambiente
+        # Esempio: GOOGLE_API_KEY, OPENAI_API_KEY
+        chat = MemvidChat(video_file=video_file, index_file=index_file)
+        
+        # Recuperiamo sia la risposta diretta che il contesto usato
+        response_text = chat.chat(request.query)
+        context = chat.retriever.search(request.query, top_k=request.top_k)
+
+        return QueryResponse(
+            response=response_text,
+            context=context
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

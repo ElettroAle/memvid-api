@@ -1,0 +1,10 @@
+# Dipendenze per l'applicazione FastAPI
+fastapi
+uvicorn[standard]
+
+# Libreria Memvid, installata direttamente da GitHub
+git+https://github.com/olow304/memvid.git
+
+# Dipendenze per eseguire i test
+pytest
+pytest-mock
