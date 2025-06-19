@@ -137,3 +137,23 @@ async def query_memory(request: QueryRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.delete("/memory/{memory_name}", tags=["Memory Management"])
+async def delete_memory(memory_name: str):
+    """
+    Cancella permanentemente una memoria esistente e tutti i suoi file.
+    """
+    memory_path = os.path.join(MEMORY_DIR, memory_name)
+
+    # Controlliamo se la memoria esiste prima di provare a cancellarla
+    if not os.path.exists(memory_path):
+        raise HTTPException(status_code=404, detail=f"Memoria '{memory_name}' non trovata.")
+
+    try:
+        # shutil.rmtree cancella una cartella e tutto il suo contenuto
+        shutil.rmtree(memory_path)
+        return {"message": f"Memoria '{memory_name}' cancellata con successo."}
+    except Exception as e:
+        # Gestiamo eventuali errori durante la cancellazione
+        raise HTTPException(status_code=500, detail=f"Errore durante la cancellazione della memoria: {e}")
