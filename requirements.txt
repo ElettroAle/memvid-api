@@ -2,6 +2,9 @@
 fastapi
 uvicorn[standard]
 
+# Dipendenze per la gestione dei file multimediali
+python-multipart
+
 # Libreria Memvid, installata direttamente da GitHub
 git+https://github.com/olow304/memvid.git
 
