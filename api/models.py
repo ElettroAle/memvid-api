@@ -24,6 +24,12 @@ class MemoryCreationResponse(BaseModel):
     index_path: str
     stats: Optional[Dict[str, Any]] = None
 
+# Inserisci questo modello in api/models.py
+
+class ListMemoriesResponse(BaseModel):
+    """Risposta contenente la lista dei nomi delle memorie disponibili."""
+    memories: List[str]
+
 class QueryResponse(BaseModel):
     """Risposta dettagliata a una query."""
     response: str

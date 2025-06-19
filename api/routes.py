@@ -7,7 +7,8 @@ from typing import List
 from memvid import MemvidEncoder, MemvidChat
 
 # Importiamo i nostri modelli Pydantic aggiornati
-from .models import CreateMemoryFromChunksRequest, QueryRequest, MemoryCreationResponse, QueryResponse
+from .models import CreateMemoryFromChunksRequest, QueryRequest, MemoryCreationResponse, QueryResponse, ListMemoriesResponse
+
 
 router = APIRouter()
 
@@ -137,7 +138,22 @@ async def query_memory(request: QueryRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/memories/", response_model=ListMemoriesResponse, tags=["Memory Management"])
+async def list_memories():
+    """
+    Restituisce una lista dei nomi di tutte le memorie create.
+    """
+    if not os.path.exists(MEMORY_DIR):
+        # Se la directory base non esiste, non ci sono memorie
+        return ListMemoriesResponse(memories=[])
     
+    try:
+        # Elenchiamo solo le directory all'interno della cartella delle memorie
+        memory_names = [name for name in os.listdir(MEMORY_DIR) if os.path.isdir(os.path.join(MEMORY_DIR, name))]
+        return ListMemoriesResponse(memories=memory_names)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Errore durante la lettura delle memorie: {e}")    
 
 @router.delete("/memory/{memory_name}", tags=["Memory Management"])
 async def delete_memory(memory_name: str):

@@ -135,3 +135,71 @@ def test_query_memory_success_with_mock(mocker):
     response_json = response.json()
     assert response_json["response"] == mock_chat_response
     assert response_json["context"] == mock_context_response
+
+
+def test_delete_memory_success():
+    """
+    Test 6: Verifica che la cancellazione di una memoria funzioni correttamente.
+    """
+    # Arrange:
+    # 1. Creiamo una memoria da cancellare
+    memory_name = "memory_to_delete"
+    create_response = client.post("/api/create-from-chunks", json={"memory_name": memory_name, "chunks": ["test delete"]})
+    assert create_response.status_code == 200
+    
+    # 2. Verifichiamo che la cartella della memoria esista davvero
+    memory_path = os.path.join(MEMORY_DIR, memory_name)
+    assert os.path.exists(memory_path)
+
+    # Act: Eseguiamo la chiamata all'API di cancellazione
+    delete_response = client.delete(f"/api/memory/{memory_name}")
+
+    # Assert:
+    # 1. Verifichiamo che la risposta sia positiva
+    assert delete_response.status_code == 200
+    assert "cancellata con successo" in delete_response.json()["message"]
+    
+    # 2. Verifichiamo che la cartella della memoria sia stata effettivamente cancellata
+    assert not os.path.exists(memory_path)
+
+# Inserisci questo test in tests/test_api.py
+
+def test_list_memories():
+    """
+    Test 8: Verifica che l'API restituisca correttamente la lista delle memorie esistenti.
+    """
+    # Arrange: Creiamo due memorie per il test
+    client.post("/api/create-from-chunks", json={"memory_name": "memoria_uno", "chunks": ["a"]})
+    client.post("/api/create-from-chunks", json={"memory_name": "memoria_due", "chunks": ["b"]})
+
+    # Act: Chiamiamo l'endpoint per listare le memorie
+    response = client.get("/api/memories/")
+
+    # Assert: Verifichiamo il risultato
+    assert response.status_code == 200
+    response_data = response.json()
+    
+    # Usiamo set() per confrontare le liste senza preoccuparci dell'ordine
+    assert "memories" in response_data
+    assert set(response_data["memories"]) == {"memoria_uno", "memoria_due"}
+
+def test_list_memories_empty():
+    """
+    Test 9: Verifica che l'API restituisca una lista vuota se non ci sono memorie.
+    """
+    # Act: Chiamiamo l'endpoint senza aver creato nessuna memoria
+    response = client.get("/api/memories/")
+    
+    # Assert
+    assert response.status_code == 200
+    assert response.json() == {"memories": []}
+
+def test_delete_memory_not_found():
+    """
+    Test 7: Verifica che l'API restituisca Not Found se si cerca di cancellare una memoria inesistente.
+    """
+    # Act: Chiamiamo l'endpoint di cancellazione con un nome fittizio
+    response = client.delete("/api/memory/memoria_inesistente")
+
+    # Assert: Verifichiamo di ricevere un errore 404 Not Found
+    assert response.status_code == 404
