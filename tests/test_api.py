@@ -62,7 +62,7 @@ def test_create_memory_from_files_success():
     """
     # Arrange: Creiamo un file di testo fittizio per l'upload
     test_filename = "test_file.txt"
-    with open(test_filename, "w") as f:
+    with open(test_filename, "w", encoding="utf-8") as f:
         f.write("Questo è un file di test.")
     
     # Act: Eseguiamo la chiamata all'API inviando il file
