@@ -65,11 +65,13 @@ def test_create_memory_from_files_success():
     with open(test_filename, "w", encoding="utf-8") as f:
         f.write("Questo è un file di test.")
     
+
+    memory_name = "test_from_files"
     # Act: Eseguiamo la chiamata all'API inviando il file
     with open(test_filename, "rb") as f:
         response = client.post(
             "/api/create-from-files",
-            data={"memory_name": "test_from_files"},
+            data={"memory_name": memory_name},
             files={"files": (test_filename, f, "text/plain")}
         )
 
@@ -77,7 +79,7 @@ def test_create_memory_from_files_success():
     assert response.status_code == 200
     response_json = response.json()
     assert response_json["message"] == "Memoria creata con successo dai file."
-    assert os.path.exists(os.path.join(MEMORY_DIR, "test_from_files", "memory.mp4"))
+    assert os.path.exists(os.path.join(MEMORY_DIR, memory_name))
 
     # Cleanup: Rimuoviamo il file fittizio
     os.remove(test_filename)

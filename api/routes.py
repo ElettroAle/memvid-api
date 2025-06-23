@@ -5,6 +5,7 @@ from typing import List
 
 # Importiamo le classi principali di Memvid
 from memvid import MemvidEncoder, MemvidChat
+from memvid.config import get_codec_parameters
 
 # Importiamo i nostri modelli Pydantic aggiornati
 from .models import CreateMemoryFromChunksRequest, QueryRequest, MemoryCreationResponse, QueryResponse, ListMemoriesResponse
@@ -33,6 +34,12 @@ async def create_memory_from_files(
     os.makedirs(memory_path)
 
     encoder = MemvidEncoder()
+
+    # Otteniamo il codec e l'estensione che l'encoder userà di default
+    actual_codec = encoder.config.get("codec")
+    codec_params = get_codec_parameters(actual_codec)
+    video_ext = codec_params.get("video_file_type", "mp4")
+
     temp_file_paths = []
 
     try:
@@ -57,7 +64,7 @@ async def create_memory_from_files(
             raise HTTPException(status_code=400, detail="Nessun contenuto valido trovato nei file forniti.")
 
         # Costruiamo la memoria video e l'indice
-        video_output_path = os.path.join(memory_path, "memory.mp4")
+        video_output_path = os.path.join(memory_path, f"memory.{video_ext}")
         index_output_path = os.path.join(memory_path, "index.json")
         stats = encoder.build_video(video_output_path, index_output_path)
 
