@@ -30,6 +30,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Copiamo il codice della nostra applicazione
 COPY --chown=appuser:appuser ./api ./api
 
-ENV PORT 8000
+ENV PORT=8000
 
-CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "api.main:app", "--bind", "0.0.0.0:$PORT"]
+# Usiamo la "shell form" per permettere l'espansione della variabile $PORT
+CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "api.main:app", "--bind", "0.0.0.0:${PORT}"]
