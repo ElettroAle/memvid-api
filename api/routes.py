@@ -3,13 +3,11 @@ import shutil
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Body
 from typing import List
 
-# Importiamo le classi principali di Memvid
+# Memvid specific imports
 from memvid import MemvidEncoder, MemvidChat
 from memvid.config import get_codec_parameters
 
-# Importiamo i nostri modelli Pydantic aggiornati
 from .models import CreateMemoryFromChunksRequest, QueryRequest, MemoryCreationResponse, QueryResponse, ListMemoriesResponse
-
 
 router = APIRouter()
 
@@ -124,15 +122,25 @@ async def query_memory(request: QueryRequest):
     Interroga una memoria esistente usando una query di testo.
     """
     memory_path = os.path.join(MEMORY_DIR, request.memory_name)
-    video_file = os.path.join(memory_path, "memory.mp4")
     index_file = os.path.join(memory_path, "index.json")
 
-    if not os.path.exists(video_file) or not os.path.exists(index_file):
-        raise HTTPException(status_code=404, detail=f"Memoria '{request.memory_name}' non trovata.")
+    # Controlliamo se la memoria esiste e se ha un indice
+    video_file = None
+    if os.path.exists(memory_path):
+        try:
+            # Troviamo il primo file che inizia con "memory."
+            video_filename = next(f for f in os.listdir(memory_path) if f.startswith("memory."))
+            video_file = os.path.join(memory_path, video_filename)
+        except StopIteration:
+            # Nessun file trovato
+            video_file = None
+
+    # Il controllo ora usa il video_file trovato dinamicamente
+    if not video_file or not os.path.exists(video_file) or not os.path.exists(index_file):
+        raise HTTPException(status_code=404, detail=f"Memoria '{request.memory_name}' non trovata o incompleta.")
 
     try:
         # Assicurati che le chiavi API per il provider LLM siano impostate come variabili d'ambiente
-        # Esempio: GOOGLE_API_KEY, OPENAI_API_KEY
         chat = MemvidChat(video_file=video_file, index_file=index_file)
         
         # Recuperiamo sia la risposta diretta che il contesto usato
@@ -145,7 +153,7 @@ async def query_memory(request: QueryRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 @router.get("/memories/", response_model=ListMemoriesResponse, tags=["Memory Management"])
 async def list_memories():
     """
