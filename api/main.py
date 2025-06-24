@@ -26,15 +26,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Applica le regole CORS a tutti gli endpoint.
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"], # Permette tutti i metodi (GET, POST, DELETE, etc.)
-    allow_headers=["*"], # Permette tutti gli header
-)
-
 # Include tutte le route definite nel file routes.py sotto il prefisso /api
 app.include_router(api_router, prefix="/api/v1")
 
