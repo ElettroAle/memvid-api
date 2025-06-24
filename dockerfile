@@ -7,6 +7,7 @@ ENV PIP_NO_CACHE_DIR=on \
 
 WORKDIR /app
 
+# Non è più necessario installare git
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -30,7 +31,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Copiamo il codice della nostra applicazione
 COPY --chown=appuser:appuser ./api ./api
 
+# Impostiamo una porta di default. Render la sovrascriverà con la sua.
 ENV PORT=8001
 
+# --- RIGA CORRETTA ---
 # Usiamo la "shell form" per permettere l'espansione della variabile $PORT
-CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "api.main:app", "--bind", "0.0.0.0:${PORT}"]
+CMD gunicorn -w 4 -k uvicorn.workers.UvicornWorker api.main:app --bind 0.0.0.0:$PORT
