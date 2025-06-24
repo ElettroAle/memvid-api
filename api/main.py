@@ -36,7 +36,7 @@ app.add_middleware(
 )
 
 # Include tutte le route definite nel file routes.py sotto il prefisso /api
-app.include_router(api_router, prefix="/api")
+app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/", tags=["Root"])
 async def read_root():
