@@ -7,6 +7,11 @@ ENV PIP_NO_CACHE_DIR=on \
 
 WORKDIR /app
 
+# Installiamo le dipendenze di sistema necessarie per l'esecuzione di OpenCV (cv2)
+# libgl1 fornisce il file libGL.so.1 che mancava.
+RUN apt-get update && apt-get install -y --no-install-recommends libgl1 && \
+    rm -rf /var/lib/apt/lists/*
+
 # Non è più necessario installare git
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
