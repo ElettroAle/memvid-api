@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from .routes import router as api_router
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,10 +9,22 @@ app = FastAPI(
     version="0.0.1",
 )
 
-origins = [
-    "http://localhost:5173",  # L'indirizzo del tuo server di sviluppo React/Vite
-    # In futuro qui aggiungerai l'URL di produzione
-]
+# Leggi la variabile d'ambiente "CORS_ORIGINS".
+# Se non la trova, usa un valore di default (l'URL di sviluppo locale).
+# La stringa può contenere più URL separati da virgola.
+origins_str = os.getenv("CORS_ORIGINS", "http://localhost:5173")
+
+# 3. Dividi la stringa in una lista di URL, togliendo eventuali spazi
+origins = [origin.strip() for origin in origins_str.split(',')]
+
+# 4. Aggiungi il middleware usando la lista di origini dinamica
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Applica le regole CORS a tutti gli endpoint.
 app.add_middleware(

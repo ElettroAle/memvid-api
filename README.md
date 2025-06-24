@@ -1,134 +1,88 @@
-# Memvid API
+# Memvid API Backend
 
-Questa è un'API web funzionale, costruita con [FastAPI](https://fastapi.tiangolo.com/), che funge da interfaccia per interagire con la libreria [Memvid](https://github.com/olow304/memvid). L'API permette di creare "memorie" da documenti o da chunk di testo e di interrogarle successivamente tramite un modello linguistico (LLM).
+Questa è l'API backend del progetto Memvid, costruita con [FastAPI](https://fastapi.tiangolo.com/). Funge da interfaccia per interagire con la libreria [Memvid](https://github.com/olow304/memvid), permettendo di creare, gestire e interrogare memorie documentali tramite un modello linguistico (LLM).
+
+Questo backend è progettato per essere usato in combinazione con un'applicazione frontend (es. [memvid-fe](https://github.com/ElettroAle/memvid-fe)).
 
 ## Funzionalità Principali
 
-* **Creazione di Memorie da File**: Carica uno o più file (`.txt`, `.pdf`) per creare una nuova memoria `memvid`.
-* **Creazione di Memorie da Testo**: Invia una lista di stringhe (chunk) per creare una nuova memoria.
-* **Interrogazione Intelligente**: Poni una domanda in linguaggio naturale a una memoria esistente per ricevere una risposta generata da un LLM, basata sul contesto estratto dai documenti.
-* **Gestione Organizzata**: Ogni memoria viene salvata in una cartella dedicata per una facile gestione.
-* **Test Suite**: Include una suite di unit test con `pytest` per verificare il corretto funzionamento degli endpoint.
+* **Gestione Memorie**: Crea memorie da file (`.txt`, `.pdf`) o da chunk di testo. Elenca e cancella le memorie esistenti.
+* **Interrogazione Intelligente**: Poni una domanda in linguaggio naturale a una memoria per ricevere una risposta generata da un LLM.
+* **Architettura Pronta per la Produzione**: Include una configurazione basata su variabili d'ambiente e un `Dockerfile` per un deploy semplice e robusto.
+* **Test Suite**: Include una suite di test con `pytest` per verificare il corretto funzionamento degli endpoint.
 
-## Struttura del Progetto
+## Guida all'Installazione e Configurazione Locale
 
-```
-memvid-api/
-├── .venv/                  # Ambiente virtuale Python (ignorato da Git)
-├── api/                    # Codice sorgente dell'API FastAPI
-│   ├── main.py
-│   ├── models.py
-│   └── routes.py
-├── memvid_memories/        # Directory dove vengono salvate le memorie create
-├── temp_uploads/           # Cartella per i file caricati temporaneamente
-├── tests/                  # Unit test per l'API
-│   └── test_api.py
-├── .gitignore
-├── README.md
-└── requirements.txt        # Lista delle dipendenze del progetto
-```
-
-## 1. Setup dell'Ambiente e Installazione
-
-Per eseguire questo progetto in locale, segui questi passaggi.
-
-**a. Clona il repository**
+### 1. Setup dell'Ambiente
 ```bash
-git clone <URL_DEL_TUO_REPOSITORY>
+# Clona il repository
+git clone <URL_DEL_TUO_REPO_BACKEND>
 cd memvid-api
-```
 
-**b. Crea e attiva un ambiente virtuale**
-L'ambiente virtuale isola le dipendenze di questo progetto dal resto del sistema.
-
-```bash
-# Crea l'ambiente
+# Crea e attiva un ambiente virtuale
 python -m venv .venv
-
-# Attiva l'ambiente (Windows)
+# Su Windows:
 .\.venv\Scripts\activate
-
-# Attiva l'ambiente (macOS/Linux)
+# Su macOS/Linux:
 source .venv/bin/activate
-```
 
-**c. Installa tutte le dipendenze**
-Il file `requirements.txt` è configurato per installare tutto il necessario, inclusa la libreria `memvid` direttamente da GitHub.
-```bash
+# Installa tutte le dipendenze
 pip install -r requirements.txt
 ```
 
-## 2. Configurazione di Visual Studio Code
+### 2. Configurazione delle Variabili d'Ambiente
+Copia le tue chiavi API in un file `.env` nella cartella principale del progetto. Questo file è ignorato da Git per sicurezza.
 
-La cartella `.vscode`, che contiene le impostazioni dell'editor, è volutamente inclusa nel file `.gitignore`. Questo perché le configurazioni possono essere specifiche per ogni utente. Di seguito sono riportati i passaggi per configurare VS Code da zero per questo progetto.
-
-**a. Seleziona l'Interprete Python**
-Dobbiamo dire a VS Code di usare l'interprete Python del nostro ambiente virtuale.
-
-1.  Apri la "Command Palette" (`Ctrl+Shift+P` o `Cmd+Shift+P` su Mac).
-2.  Digita e seleziona **"Python: Select Interpreter"**.
-3.  Scegli l'interprete che si trova nel percorso `.\.venv\Scripts\python.exe`. VS Code lo creerà o aggiornerà il file `.vscode/settings.json` per te.
-
-**b. Configura il Debugger (tasto F5)**
-Per poter avviare e debuggare l'applicazione premendo F5, è necessario creare un file di configurazione per il debugger.
-
-1.  Crea una cartella `.vscode` nella root del progetto (se non esiste già).
-2.  All'interno di `.vscode`, crea un file chiamato `launch.json`.
-3.  Incolla il seguente contenuto nel file `launch.json`:
-
-    ```json
-    {
-        "version": "0.2.0",
-        "configurations": [
-            {
-                "name": "Python: Debug FastAPI",
-                "type": "debugpy",
-                "request": "launch",
-                "module": "uvicorn",
-                "args": [
-                    "api.main:app",
-                    "--reload",
-                    "--port", 
-                    "8001"
-                ],
-                "jinja": true,
-                "justMyCode": true
-            }
-        ]
-    }
-    ```
-
-## 3. Configurazione delle Chiavi API (Variabili d'Ambiente)
-
-Per poter interrogare una memoria, l'API utilizza un modello linguistico che richiede una chiave API. Assicurati di impostare la variabile d'ambiente corretta nel tuo terminale prima di avviare il server.
-
-**Esempio (se usi Google Gemini):**
-```powershell
-# In PowerShell (Windows)
-$env:GOOGLE_API_KEY="LA_TUA_CHIAVE_API_QUI"
-
-# In Bash (macOS/Linux)
-export GOOGLE_API_KEY="LA_TUA_CHIAVE_API_QUI"
+**File: `.env`**
 ```
+GOOGLE_API_KEY="LA_TUA_CHIAVE_API_QUI"
+CORS_ORIGINS="http://localhost:5173"
+```
+L'applicazione caricherà automaticamente queste variabili all'avvio.
 
-## 4. Avvio dell'Applicazione
-
-Con l'ambiente virtuale attivo e le variabili d'ambiente impostate, puoi avviare il server direttamente da VS Code premendo **F5**, oppure manualmente dal terminale:
-
+### 3. Avvio del Server Locale
+Avvia il server di sviluppo con Uvicorn. Grazie a `--reload`, si riavvierà automaticamente ad ogni modifica del codice.
 ```bash
 uvicorn api.main:app --reload --port 8001
 ```
 
-## 5. Utilizzo dell'API
+## Documentazione API
 
-### Documentazione Interattiva
-Il modo più semplice per testare l'API è tramite la documentazione interattiva (Swagger UI), disponibile all'indirizzo che hai configurato (es. **[http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs)**).
+L'API espone i seguenti endpoint. Il modo più semplice per testarli è tramite la documentazione interattiva disponibile a **[http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs)**.
 
-*(Gli esempi di `curl` rimangono invariati)*
+* `GET /api/memories/`
+    * **Descrizione**: Restituisce una lista dei nomi di tutte le memorie create.
+    * **Risposta**: `{ "memories": ["memoria1", "memoria2"] }`
 
-## 6. Eseguire i Test
+* `POST /api/create-from-files`
+    * **Descrizione**: Crea una nuova memoria da uno o più file.
+    * **Input**: `multipart/form-data` con un campo `memory_name` (stringa) e un campo `files` (uno o più file).
 
-Per assicurarti che tutto funzioni correttamente, puoi lanciare la suite di test automatizzati.
+* `POST /api/create-from-chunks`
+    * **Descrizione**: Crea una nuova memoria da una lista di stringhe di testo.
+    * **Input**: JSON con `memory_name` (stringa) e `chunks` (lista di stringhe).
+
+* `POST /api/query`
+    * **Descrizione**: Interroga una memoria esistente.
+    * **Input**: JSON con `memory_name` (stringa) e `query` (stringa).
+
+* `DELETE /api/memory/{memory_name}`
+    * **Descrizione**: Cancella permanentemente una memoria esistente.
+    * **Input**: Il `memory_name` viene passato come parte dell'URL.
+
+## Eseguire i Test
+Per lanciare la suite di test automatizzati:
 ```bash
 pytest
 ```
+
+## Deployment in Produzione (Render)
+Questo progetto include un `Dockerfile` per un facile deploy su piattaforme come Render.
+
+1.  Collega il tuo repository a un nuovo "Web Service" su Render.
+2.  Render dovrebbe rilevare e usare automaticamente il `Dockerfile`.
+3.  Nella sezione "Environment" di Render, imposta le variabili d'ambiente necessarie:
+    * `GOOGLE_API_KEY`: La tua chiave API.
+    * `CORS_ORIGINS`: L'URL del tuo frontend deployato (es. `https://il-tuo-frontend.vercel.app`).
+    * `PORT`: Render imposta questa variabile automaticamente, il nostro `Dockerfile` la userà.
+4.  Aggiungi un "Disk" per lo storage persistente, impostando il "Mount Path" a `/app/memvid_memories`.
