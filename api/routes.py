@@ -12,8 +12,8 @@ from .models import CreateMemoryFromChunksRequest, QueryRequest, MemoryCreationR
 router = APIRouter()
 
 # Definiamo delle directory di base per i file temporanei e le memorie permanenti
-UPLOAD_DIR = "temp_uploads"
-MEMORY_DIR = "memvid_memories"
+UPLOAD_DIR = os.getenv("MEMVID_UPLOAD_DIR", "temp_uploads")
+MEMORY_DIR = os.getenv("MEMVID_MEMORY_DIR", "memvid_memories")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(MEMORY_DIR, exist_ok=True)
 

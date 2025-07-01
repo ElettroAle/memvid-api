@@ -1,16 +1,8 @@
-# --- Framework e Server API ---
-# Per far funzionare FastAPI e il server di sviluppo/produzione
 fastapi
 uvicorn[standard]
 gunicorn
-
-# --- Libreria Principale ---
-# Installa il pacchetto memvid direttamente dal repository GitHub
-# git+https://github.com/olow304/memvid.git
-# Installa il pacchetto memvid da PyPI
+python-multipart
 memvid
-
-# --- Testing ---
-# Per eseguire la nostra suite di test
+qrcode[pil]
 pytest
 pytest-mock

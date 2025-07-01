@@ -10,7 +10,7 @@ WORKDIR /app
 # --- RIGA MODIFICATA ---
 # Aggiorniamo i pacchetti E INSTALLIAMO LE DIPENDENZE DI SISTEMA PER OPENCV
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends libgl1-mesa-glx && \
+    apt-get install -y --no-install-recommends libgl1-mesa-glx libglib2.0-0 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -25,6 +25,8 @@ FROM python:3.11.9-slim-bookworm
 WORKDIR /app
 
 RUN useradd --create-home appuser
+RUN mkdir -p /app/temp_uploads && chown appuser:appuser /app/temp_uploads
+RUN mkdir -p /app/memvid_memories && chown appuser:appuser /app/memvid_memories
 USER appuser
 
 # Copiamo le dipendenze E GLI ESEGUIBILI dallo stage "builder"
@@ -38,7 +40,9 @@ COPY --from=builder /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 # Copiamo il codice della nostra applicazione
 COPY --chown=appuser:appuser ./api ./api
 
-ENV PORT 8000
+ENV PORT=8000
+ENV MEMVID_UPLOAD_DIR=/app/temp_uploads
+ENV MEMVID_MEMORY_DIR=/app/memvid_memories
 
 # Usiamo la "shell form" per permettere l'espansione della variabile $PORT
 CMD gunicorn -w 4 -k uvicorn.workers.UvicornWorker api.main:app --bind 0.0.0.0:$PORT
