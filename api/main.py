@@ -15,7 +15,8 @@ app = FastAPI(
 origins_str = os.getenv("CORS_ORIGINS", "http://localhost:5173")
 
 # 3. Dividi la stringa in una lista di URL, togliendo eventuali spazi
-origins = [origin.strip() for origin in origins_str.split(',')]
+origins = [origin.strip() for origin in origins_str.split(',')] 
+print(f"CORS Origins configured: {origins}") # DEBUG LINE 
 
 # 4. Aggiungi il middleware usando la lista di origini dinamica
 app.add_middleware(
