@@ -40,9 +40,16 @@ COPY --from=builder /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 # Copiamo il codice della nostra applicazione
 COPY --chown=appuser:appuser ./api ./api
 
+# Installiamo le dipendenze anche nello stage finale per sicurezza
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
 ENV PORT=8000
 ENV MEMVID_UPLOAD_DIR=/app/temp_uploads
 ENV MEMVID_MEMORY_DIR=/app/memvid_memories
 
+# Esponiamo la porta su cui l'applicazione ascolterà
+EXPOSE $PORT
+
 # Usiamo la "shell form" per permettere l'espansione della variabile $PORT
-CMD gunicorn -w 4 -k uvicorn.workers.UvicornWorker api.main:app --bind 0.0.0.0:$PORT
+CMD uvicorn api.main:app --host 0.0.0.0 --port $PORT
