@@ -11,11 +11,11 @@ from .models import CreateMemoryFromChunksRequest, QueryRequest, MemoryCreationR
 
 router = APIRouter()
 
-# --- CONFIGURAZIONE CENTRALIZZATA ---
+# --- CONFIGURAZIONE ---
+# Torniamo a usare le directory senza specificare il modello
 UPLOAD_DIR = os.getenv("MEMVID_UPLOAD_DIR", "temp_uploads")
 MEMORY_DIR = os.getenv("MEMVID_MEMORY_DIR", "memvid_memories")
-LIGHTWEIGHT_MODEL = 'all-MiniLM-L6-v2'
-# ------------------------------------
+# --------------------
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(MEMORY_DIR, exist_ok=True)
@@ -31,11 +31,12 @@ async def create_memory_from_files(
         raise HTTPException(status_code=409, detail=f"Una memoria con il nome '{memory_name}' esiste già.")
     os.makedirs(memory_path)
 
-    # --- CORREZIONE FONDAMENTALE ---
-    # Usiamo il parametro corretto "config_overrides" per passare la configurazione
-    encoder = MemvidEncoder(config_overrides={'embedding_model': LIGHTWEIGHT_MODEL})
+    # --- RIPRISTINO ---
+    # Inizializziamo l'encoder senza passare nessun argomento,
+    # così userà la sua configurazione di default.
+    encoder = MemvidEncoder()
     
-    # Otteniamo l'estensione dinamicamente dal codec che l'encoder userà
+    # Manteniamo la logica intelligente per l'estensione del file
     actual_codec = encoder.config.get("codec", "h265")
     video_ext = get_codec_parameters(actual_codec).get("video_file_type", "mkv")
 
@@ -52,8 +53,6 @@ async def create_memory_from_files(
             elif file.filename.lower().endswith(".txt"):
                 with open(temp_path, "r", encoding="utf-8", errors='ignore') as f:
                     encoder.add_text(f.read())
-            else:
-                print(f"File non supportato: {file.filename}, verrà ignorato.")
 
         if not encoder.chunks:
             raise HTTPException(status_code=400, detail="Nessun contenuto valido trovato nei file forniti.")
@@ -62,13 +61,7 @@ async def create_memory_from_files(
         index_output_path = os.path.join(memory_path, "index.json")
         stats = encoder.build_video(video_output_path, index_output_path)
 
-        return MemoryCreationResponse(
-            message="Memoria creata con successo dai file.",
-            memory_name=memory_name,
-            video_path=video_output_path,
-            index_path=index_output_path,
-            stats=stats
-        )
+        return MemoryCreationResponse(message="Memoria creata con successo dai file.", memory_name=memory_name, video_path=video_output_path, index_path=index_output_path, stats=stats)
     except Exception as e:
         if os.path.exists(memory_path):
             shutil.rmtree(memory_path)
@@ -87,27 +80,20 @@ async def create_memory_from_chunks(request: CreateMemoryFromChunksRequest):
     os.makedirs(memory_path)
     
     try:
-        # --- CORREZIONE FONDAMENTALE ---
-        # Usiamo anche qui il parametro corretto "config_overrides"
-        encoder = MemvidEncoder(config_overrides={'embedding_model': LIGHTWEIGHT_MODEL})
+        # --- RIPRISTINO ---
+        # Anche qui, inizializziamo l'encoder senza argomenti
+        encoder = MemvidEncoder()
         
-        # Rendiamo dinamica l'estensione anche qui per coerenza
         actual_codec = encoder.config.get("codec", "h265")
         video_ext = get_codec_parameters(actual_codec).get("video_file_type", "mkv")
-
+        
         encoder.add_chunks(request.chunks)
 
         video_output_path = os.path.join(memory_path, f"memory.{video_ext}")
         index_output_path = os.path.join(memory_path, "index.json")
         stats = encoder.build_video(video_output_path, index_output_path)
 
-        return MemoryCreationResponse(
-            message="Memoria creata con successo dai chunk.",
-            memory_name=request.memory_name,
-            video_path=video_output_path,
-            index_path=index_output_path,
-            stats=stats
-        )
+        return MemoryCreationResponse(message="Memoria creata con successo dai chunk.", memory_name=request.memory_name, video_path=video_output_path, index_path=index_output_path, stats=stats)
     except Exception as e:
         if os.path.exists(memory_path):
             shutil.rmtree(memory_path)
@@ -163,4 +149,4 @@ async def delete_memory(memory_name: str):
         shutil.rmtree(memory_path)
         return {"message": f"Memoria '{memory_name}' cancellata con successo."}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Errore durante la cancellazione della memoria: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
