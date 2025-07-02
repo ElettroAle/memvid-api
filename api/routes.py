@@ -11,6 +11,8 @@ from .models import CreateMemoryFromChunksRequest, QueryRequest, MemoryCreationR
 
 router = APIRouter()
 
+LIGHTWEIGHT_MODEL = 'all-MiniLM-L6-v2'
+
 # Definiamo delle directory di base per i file temporanei e le memorie permanenti
 UPLOAD_DIR = os.getenv("MEMVID_UPLOAD_DIR", "temp_uploads")
 MEMORY_DIR = os.getenv("MEMVID_MEMORY_DIR", "memvid_memories")
@@ -31,7 +33,7 @@ async def create_memory_from_files(
         raise HTTPException(status_code=409, detail=f"Una memoria con il nome '{memory_name}' esiste già.")
     os.makedirs(memory_path)
 
-    encoder = MemvidEncoder()
+    encoder = MemvidEncoder(config={'embedding_model': LIGHTWEIGHT_MODEL})
 
     # Otteniamo il codec e l'estensione che l'encoder userà di default
     actual_codec = encoder.config.get("codec")
@@ -96,7 +98,7 @@ async def create_memory_from_chunks(request: CreateMemoryFromChunksRequest):
     os.makedirs(memory_path)
     
     try:
-        encoder = MemvidEncoder()
+        encoder = MemvidEncoder(config={'embedding_model': LIGHTWEIGHT_MODEL})
         encoder.add_chunks(request.chunks)
 
         video_output_path = os.path.join(memory_path, "memory.mp4")
